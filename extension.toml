@@ -3,7 +3,7 @@ name = "VB.NET"
 description = "Visual Basic .NET syntax highlighting, outline, bracket matching and auto-indent."
 version = "0.1.0"
 schema_version = 1
-authors = Kellett
+authors = "Kellett"
 repository = "https://github.com/Kellett/zed-vb-dotnet"
 
 # The grammar key must stay "vb_dotnet": it has to match the `name` field in the
