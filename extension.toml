@@ -1,0 +1,16 @@
+id = "vb-dotnet"
+name = "VB.NET"
+description = "Visual Basic .NET syntax highlighting, outline, bracket matching and auto-indent."
+version = "0.1.0"
+schema_version = 1
+authors = Kellett
+repository = "https://github.com/Kellett/zed-vb-dotnet"
+
+# The grammar key must stay "vb_dotnet": it has to match the `name` field in the
+# grammar's grammar.js, which is what the compiled parser exports.
+#
+# This points at a fork of CodeAnt-AI/tree-sitter-vb-dotnet. The fork carries
+# fixes without which VB.NET highlighting is not possible at all - see README.md.
+[grammars.vb_dotnet]
+repository = "https://github.com/Kellett/tree-sitter-vb-dotnet"
+rev = "176b9587e48b4fcf52e5abcefeccfeb724319464"

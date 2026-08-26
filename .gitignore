@@ -1,0 +1,12 @@
+# Zed extension build output
+/target/
+*.wasm
+
+# tree-sitter build artefacts, if you test queries from inside this repo
+*.so
+*.dylib
+*.dll
+
+# OS noise
+.DS_Store
+Thumbs.db
