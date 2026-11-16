@@ -6,12 +6,6 @@
 		"strikethrough": true
 	},
 	{
-		"token_modifiers": [
-			"reassignedVariable"
-		],
-		"underline": true
-	},
-	{
 		"token_type": "keyword",
 		"style": [
 			"keyword.vb",
@@ -135,17 +129,18 @@
 		]
 	},
 	{
-		"token_type": "field",
+		"token_type": "event",
 		"style": [
 			"property.vb",
 			"property"
 		]
 	},
 	{
-		"token_type": "event",
+		"token_type": "field",
 		"style": [
-			"property.vb",
-			"property"
+			"variable.member.vb",
+			"variable.member",
+			"variable"
 		]
 	},
 	{
@@ -176,7 +171,8 @@
 			"constant.enum.vb",
 			"constant.enum",
 			"constant"
-		]
+		],
+		"font_style": "normal"
 	},
 	{
 		"token_type": "label",

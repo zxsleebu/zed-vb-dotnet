@@ -32,7 +32,7 @@
   colours, and can be recoloured for VB alone via `theme_overrides`.
 - **`semantic_token_rules.json`** maps every Roslyn token type, including the custom ones
   (`controlKeyword`, `field`, `module`, `xmlDocComment*`, …), onto the same classes.
-  Obsolete members are struck through and reassigned variables underlined.
+  Obsolete members are struck through. Fields are told apart from properties.
 - ```` ```vb ```` code fences in Markdown are highlighted as VB.NET.
 
 ## 0.1.0
