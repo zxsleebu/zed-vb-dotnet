@@ -95,14 +95,30 @@ so diagnostics match what Visual Studio shows.
    nuget.org into its own folder and runs it with your `dotnet`. nuget.org package
    versions are immutable, so this is always the same build.
 
-**Which projects load.** If the folder you opened in Zed has exactly one `.sln` or `.slnx`
-at its root, the server opens that solution. Otherwise it loads every `.vbproj` and
-`.csproj` below the folder. With several solutions at the root, pick one in
-`.vscode/settings.json`, which Roslyn reads even outside VS Code:
+**Which projects load.** VB projects are only found through a solution:
 
-```json
-{ "dotnet.defaultSolution": "MyApp.sln" }
-```
+- If the folder you opened in Zed has exactly one `.sln` or `.slnx` at its root, the
+  server opens that solution, VB projects included.
+- Otherwise, name the solution in `.vscode/settings.json` in that folder. Roslyn reads
+  this file even outside VS Code, and the path is relative to the folder:
+
+  ```json
+  { "dotnet.defaultSolution": "src/MyApp.sln" }
+  ```
+
+- Without a solution, vb-ls 0.4.0 searches only for `.csproj` files. Support for
+  `.vbproj` was added to vb-ls after that release. VB files then open with no project
+  and no references: `Dictionary`, `List` and everything else from referenced
+  assemblies shows as unknown. If you have no `.sln`, create one at the root:
+
+  ```powershell
+  dotnet new sln -n All
+  dotnet sln All.sln add (Get-ChildItem -Recurse -Include *.vbproj, *.csproj)
+  ```
+
+To check, open **dev: open language server logs** -> *vb-ls*. It should say
+`Found single solution file` or `Using VS Code settings to auto load solution`, followed
+by a successful load of your `.vbproj`.
 
 **What works:**
 

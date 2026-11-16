@@ -135,9 +135,11 @@ fn default_server_args() -> Vec<String> {
         "--stdio".into(),
         // Without this Roslyn waits for a VS Code-only `solution/open`
         // notification and never loads anything. With it, Roslyn opens the
-        // single .sln/.slnx at the worktree root, or else every
-        // .vbproj/.csproj below it. With several solutions at the root, pick
-        // one via `.vscode/settings.json` -> `"dotnet.defaultSolution"`.
+        // single .sln/.slnx at the worktree root, or the one named by
+        // `.vscode/settings.json` -> `"dotnet.defaultSolution"`. Failing that
+        // it loads loose projects, but vb-ls 0.4.0 only looks for *.csproj
+        // there (its *.vbproj patch landed after the release), so VB projects
+        // need a solution.
         "--autoLoadProjects".into(),
         "--logLevel".into(),
         "Information".into(),
