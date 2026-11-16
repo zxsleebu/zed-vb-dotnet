@@ -124,11 +124,8 @@ at its root, the server opens that solution. Otherwise it loads every `.vbproj` 
 ```
 
 **Semantic highlighting** from Roslyn can be layered on top of tree-sitter. Roslyn knows
-whether a name is a class, a module, a local or a field, so this adds information:
-
-```json
-{ "languages": { "VB.NET": { "semantic_tokens": "combined" } } }
-```
+whether a name is a class, a module, a local or a field, so this adds information. See
+[Colours like Visual Studio](#colours-like-visual-studio) below.
 
 **Server options** go under `lsp.vb-ls.settings`, grouped the way Roslyn names them. The
 example below shows the extension's defaults; anything you set is merged on top of them:
@@ -158,6 +155,65 @@ The scope values are `None`, `OpenFiles` and `FullSolution`. On a very large sol
 compiler diagnostics to `OpenFiles`. The rest of the defaults are in
 [`src/lib.rs`](src/lib.rs). Every available option is listed in Roslyn's
 `DidChangeConfigurationNotificationHandler`.
+
+## Colours like Visual Studio
+
+Highlighting follows Visual Studio's own classification, taken from Roslyn:
+
+- **Control-flow keywords are a separate class.** `If`/`Then`/`Else`, `For`/`To`/`Next`,
+  `For Each`/`In`, `Do`/`Loop`, `While`, `Select Case`, `Try`/`Catch`/`Finally`, `Return`,
+  `Throw`, `Exit …`, `Continue …` and `GoTo` are control keywords. Other keywords, such as
+  `Dim`, `As`, `Sub` and `New`, are not. The split depends on context: `End If` is control
+  but `End Sub` is not, and `To` in `For` is control but in `Dim a(0 To 5)` it is not.
+- **Some words are keywords in VB.** Primitive types (`Integer`, `String`, `Object`),
+  `Nothing`, `Me`/`MyBase` and conversion operators (`CType`, `DirectCast`, `CStr`, …)
+  are keywords.
+- **Types are split up further.** Classes, interfaces, enums and type parameters each have
+  their own class. Enum members and constants have one too.
+- **Qualified names are split.** In `System.IO.MemoryStream`, only `MemoryStream` is a
+  type; `System.IO` is a namespace.
+- **`#1/1/2000#` date literals** are coloured as numbers.
+
+Every capture ends in `.vb` (`keyword.control.vb`, `type.interface.vb`, …). Any theme
+falls back to its normal colours, and you can recolour VB alone without touching other
+languages.
+
+For the closest match to Visual Studio / VS Code with the **VSCode Dark Polished** theme,
+add this to your Zed `settings.json`:
+
+```json
+{
+  "languages": {
+    "VB.NET": {
+      // Roslyn's semantic colours on top of tree-sitter: locals vs fields vs
+      // properties, types used in expressions, obsolete members struck through.
+      "semantic_tokens": "combined"
+    }
+  },
+  "colorize_brackets": true,
+  "indent_guides": { "coloring": "indent_aware" },
+  "theme_overrides": {
+    "VSCode Dark Polished": {
+      "syntax": {
+        "keyword.vb": { "color": "#569CD6" },
+        "keyword.modifier.vb": { "color": "#569CD6" },
+        "keyword.control.vb": { "color": "#C586C0" },
+        "type.builtin.vb": { "color": "#569CD6" },
+        "constant.builtin.vb": { "color": "#569CD6" },
+        "variable.special.vb": { "color": "#569CD6" },
+        "type.interface.vb": { "color": "#B8D7A3" },
+        "type.enum.vb": { "color": "#B8D7A3" },
+        "type.parameter.vb": { "color": "#B8D7A3" },
+        "comment.doc.tag.vb": { "color": "#808080" },
+        "preproc.vb": { "color": "#9B9B9B" }
+      }
+    }
+  }
+}
+```
+
+Because every key ends in `.vb`, other languages keep the theme's own colours. For another
+theme, put its name in place of `VSCode Dark Polished`.
 
 ## Tasks and run buttons
 

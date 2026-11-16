@@ -1,0 +1,509 @@
+[
+	{
+		"token_modifiers": [
+			"deprecated"
+		],
+		"strikethrough": true
+	},
+	{
+		"token_modifiers": [
+			"reassignedVariable"
+		],
+		"underline": true
+	},
+	{
+		"token_type": "keyword",
+		"style": [
+			"keyword.vb",
+			"keyword"
+		]
+	},
+	{
+		"token_type": "controlKeyword",
+		"style": [
+			"keyword.control.vb",
+			"keyword.control",
+			"keyword"
+		]
+	},
+	{
+		"token_type": "class",
+		"style": [
+			"type.vb",
+			"type"
+		]
+	},
+	{
+		"token_type": "struct",
+		"style": [
+			"type.vb",
+			"type"
+		]
+	},
+	{
+		"token_type": "module",
+		"style": [
+			"type.vb",
+			"type"
+		]
+	},
+	{
+		"token_type": "delegate",
+		"style": [
+			"type.vb",
+			"type"
+		]
+	},
+	{
+		"token_type": "recordClass",
+		"style": [
+			"type.vb",
+			"type"
+		]
+	},
+	{
+		"token_type": "recordStruct",
+		"style": [
+			"type.vb",
+			"type"
+		]
+	},
+	{
+		"token_type": "type",
+		"style": [
+			"type.vb",
+			"type"
+		]
+	},
+	{
+		"token_type": "interface",
+		"style": [
+			"type.interface.vb",
+			"type.interface",
+			"type"
+		]
+	},
+	{
+		"token_type": "enum",
+		"style": [
+			"type.enum.vb",
+			"type.enum",
+			"type"
+		]
+	},
+	{
+		"token_type": "typeParameter",
+		"style": [
+			"type.parameter.vb",
+			"type.parameter",
+			"type"
+		]
+	},
+	{
+		"token_type": "namespace",
+		"style": [
+			"namespace.vb",
+			"namespace"
+		]
+	},
+	{
+		"token_type": "method",
+		"style": [
+			"function.vb",
+			"function"
+		]
+	},
+	{
+		"token_type": "extensionMethod",
+		"style": [
+			"function.vb",
+			"function"
+		]
+	},
+	{
+		"token_type": "function",
+		"style": [
+			"function.vb",
+			"function"
+		]
+	},
+	{
+		"token_type": "property",
+		"style": [
+			"property.vb",
+			"property"
+		]
+	},
+	{
+		"token_type": "field",
+		"style": [
+			"property.vb",
+			"property"
+		]
+	},
+	{
+		"token_type": "event",
+		"style": [
+			"property.vb",
+			"property"
+		]
+	},
+	{
+		"token_type": "variable",
+		"style": [
+			"variable.vb",
+			"variable"
+		]
+	},
+	{
+		"token_type": "parameter",
+		"style": [
+			"variable.parameter.vb",
+			"variable.parameter",
+			"variable"
+		]
+	},
+	{
+		"token_type": "constant",
+		"style": [
+			"constant.vb",
+			"constant"
+		]
+	},
+	{
+		"token_type": "enumMember",
+		"style": [
+			"constant.enum.vb",
+			"constant.enum",
+			"constant"
+		]
+	},
+	{
+		"token_type": "label",
+		"style": [
+			"label.vb",
+			"label"
+		]
+	},
+	{
+		"token_type": "string",
+		"style": [
+			"string.vb",
+			"string"
+		]
+	},
+	{
+		"token_type": "stringVerbatim",
+		"style": [
+			"string.vb",
+			"string"
+		]
+	},
+	{
+		"token_type": "stringEscapeCharacter",
+		"style": [
+			"string.escape.vb",
+			"string.escape",
+			"string"
+		]
+	},
+	{
+		"token_type": "number",
+		"style": [
+			"number.vb",
+			"number"
+		]
+	},
+	{
+		"token_type": "comment",
+		"style": [
+			"comment.vb",
+			"comment"
+		]
+	},
+	{
+		"token_type": "excludedCode",
+		"style": [
+			"comment.vb",
+			"comment"
+		]
+	},
+	{
+		"token_type": "operator",
+		"style": [
+			"operator.vb",
+			"operator"
+		]
+	},
+	{
+		"token_type": "operatorOverloaded",
+		"style": [
+			"operator.vb",
+			"operator"
+		]
+	},
+	{
+		"token_type": "punctuation",
+		"style": [
+			"punctuation.vb",
+			"punctuation"
+		]
+	},
+	{
+		"token_type": "macro",
+		"style": [
+			"preproc.vb",
+			"preproc"
+		]
+	},
+	{
+		"token_type": "preprocessorText",
+		"style": [
+			"preproc.vb",
+			"preproc"
+		]
+	},
+	{
+		"token_type": "xmlDocCommentText",
+		"style": [
+			"comment.doc.vb",
+			"comment.doc",
+			"comment"
+		]
+	},
+	{
+		"token_type": "xmlDocCommentDelimiter",
+		"style": [
+			"comment.doc.tag.vb",
+			"comment.doc.tag",
+			"comment.doc",
+			"comment"
+		]
+	},
+	{
+		"token_type": "xmlDocCommentName",
+		"style": [
+			"comment.doc.tag.vb",
+			"comment.doc.tag",
+			"comment.doc",
+			"comment"
+		]
+	},
+	{
+		"token_type": "xmlDocCommentAttributeName",
+		"style": [
+			"comment.doc.tag.vb",
+			"comment.doc.tag",
+			"comment.doc",
+			"comment"
+		]
+	},
+	{
+		"token_type": "xmlDocCommentAttributeQuotes",
+		"style": [
+			"comment.doc.tag.vb",
+			"comment.doc.tag",
+			"comment.doc",
+			"comment"
+		]
+	},
+	{
+		"token_type": "xmlDocCommentAttributeValue",
+		"style": [
+			"comment.doc.tag.vb",
+			"comment.doc.tag",
+			"comment.doc",
+			"comment"
+		]
+	},
+	{
+		"token_type": "xmlDocCommentCDataSection",
+		"style": [
+			"comment.doc.tag.vb",
+			"comment.doc.tag",
+			"comment.doc",
+			"comment"
+		]
+	},
+	{
+		"token_type": "xmlDocCommentComment",
+		"style": [
+			"comment.doc.tag.vb",
+			"comment.doc.tag",
+			"comment.doc",
+			"comment"
+		]
+	},
+	{
+		"token_type": "xmlDocCommentEntityReference",
+		"style": [
+			"comment.doc.tag.vb",
+			"comment.doc.tag",
+			"comment.doc",
+			"comment"
+		]
+	},
+	{
+		"token_type": "xmlDocCommentProcessingInstruction",
+		"style": [
+			"comment.doc.tag.vb",
+			"comment.doc.tag",
+			"comment.doc",
+			"comment"
+		]
+	},
+	{
+		"token_type": "xmlLiteralName",
+		"style": [
+			"tag.vb",
+			"tag"
+		]
+	},
+	{
+		"token_type": "xmlLiteralAttributeName",
+		"style": [
+			"attribute.vb",
+			"attribute"
+		]
+	},
+	{
+		"token_type": "xmlLiteralAttributeValue",
+		"style": [
+			"string.vb",
+			"string"
+		]
+	},
+	{
+		"token_type": "xmlLiteralAttributeQuotes",
+		"style": [
+			"string.vb",
+			"string"
+		]
+	},
+	{
+		"token_type": "xmlLiteralText",
+		"style": [
+			"text.literal.vb",
+			"text.literal",
+			"text"
+		]
+	},
+	{
+		"token_type": "xmlLiteralCDataSection",
+		"style": [
+			"text.literal.vb",
+			"text.literal",
+			"text"
+		]
+	},
+	{
+		"token_type": "xmlLiteralDelimiter",
+		"style": [
+			"punctuation.bracket.vb",
+			"punctuation.bracket",
+			"punctuation"
+		]
+	},
+	{
+		"token_type": "xmlLiteralEmbeddedExpression",
+		"style": [
+			"punctuation.special.vb",
+			"punctuation.special",
+			"punctuation"
+		]
+	},
+	{
+		"token_type": "xmlLiteralComment",
+		"style": [
+			"comment.vb",
+			"comment"
+		]
+	},
+	{
+		"token_type": "xmlLiteralEntityReference",
+		"style": [
+			"string.escape.vb",
+			"string.escape",
+			"string"
+		]
+	},
+	{
+		"token_type": "xmlLiteralProcessingInstruction",
+		"style": [
+			"preproc.vb",
+			"preproc"
+		]
+	},
+	{
+		"token_type": "regexComment",
+		"style": [
+			"string.regex.vb",
+			"string.regex",
+			"string"
+		]
+	},
+	{
+		"token_type": "regexCharacterClass",
+		"style": [
+			"string.regex.vb",
+			"string.regex",
+			"string"
+		]
+	},
+	{
+		"token_type": "regexAnchor",
+		"style": [
+			"string.regex.vb",
+			"string.regex",
+			"string"
+		]
+	},
+	{
+		"token_type": "regexQuantifier",
+		"style": [
+			"string.regex.vb",
+			"string.regex",
+			"string"
+		]
+	},
+	{
+		"token_type": "regexGrouping",
+		"style": [
+			"string.regex.vb",
+			"string.regex",
+			"string"
+		]
+	},
+	{
+		"token_type": "regexAlternation",
+		"style": [
+			"string.regex.vb",
+			"string.regex",
+			"string"
+		]
+	},
+	{
+		"token_type": "regexText",
+		"style": [
+			"string.regex.vb",
+			"string.regex",
+			"string"
+		]
+	},
+	{
+		"token_type": "regexSelfEscapedCharacter",
+		"style": [
+			"string.regex.vb",
+			"string.regex",
+			"string"
+		]
+	},
+	{
+		"token_type": "regexOtherEscape",
+		"style": [
+			"string.regex.vb",
+			"string.regex",
+			"string"
+		]
+	}
+]

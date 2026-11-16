@@ -23,7 +23,16 @@
 - **`textobjects.scm`** for Vim mode (`af`/`if`, `ac`/`ic`, `gc`, `]m`, `]]`).
 - **Line-based indentation** while a block is still unterminated, after `If … Then`,
   `Sub`, `For`, `Try` and so on. `Case` lines align with the previous `Case`.
-- **More highlighting:** constants, local variables and loop variables.
+- **Visual Studio's classification.** Control-flow keywords are their own class, split
+  by context as Roslyn does (`End If` is control, `End Sub` is not). Primitive types,
+  `Nothing`, `Me` and `CType`-style conversions count as keywords. Interfaces, enums,
+  type parameters, enum members, constants, namespaces, parameters, locals and
+  attributes each have their own class. Date literals are coloured as numbers.
+- **`.vb`-suffixed captures** (`keyword.control.vb`, …) fall back to the theme's normal
+  colours, and can be recoloured for VB alone via `theme_overrides`.
+- **`semantic_token_rules.json`** maps every Roslyn token type, including the custom ones
+  (`controlKeyword`, `field`, `module`, `xmlDocComment*`, …), onto the same classes.
+  Obsolete members are struck through and reassigned variables underlined.
 - ```` ```vb ```` code fences in Markdown are highlighted as VB.NET.
 
 ## 0.1.0
