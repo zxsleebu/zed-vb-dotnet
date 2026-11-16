@@ -106,10 +106,15 @@ so diagnostics match what Visual Studio shows.
   { "dotnet.defaultSolution": "src/MyApp.sln" }
   ```
 
-- Without a solution, vb-ls 0.4.0 searches only for `.csproj` files. Support for
-  `.vbproj` was added to vb-ls after that release. VB files then open with no project
-  and no references: `Dictionary`, `List` and everything else from referenced
-  assemblies shows as unknown. If you have no `.sln`, create one at the root:
+- Without a solution, the server falls back to searching the folder for project files.
+  vb-ls 0.4.0 shipped searching only for `*.csproj` (its `.vbproj` fix came after the
+  release), so the extension patches the downloaded server to search `*.??proj`
+  instead. That is a same-length string swap in the DLL, and covers `.vbproj`. This
+  fallback is **unreliable** in Roslyn itself, though. It hands the project list to a
+  background task and then frees the list, so sometimes nothing loads. VB files then
+  open with no project and no references: `Dictionary`, `List` and everything from
+  referenced assemblies shows as unknown. **Use a solution.** If you have none, create
+  one at the root:
 
   ```powershell
   dotnet new sln -n All

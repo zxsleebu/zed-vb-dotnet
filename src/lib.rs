@@ -98,12 +98,85 @@ impl VbDotnetExtension {
             remove_stale_versions(&package_dir);
         }
 
+        // Runs on every start, so copies downloaded before this patch existed
+        // get fixed too. A failure only costs loose-.vbproj discovery, so it
+        // must not keep the server from starting.
+        let _ = patch_vbproj_discovery(&relative_dll);
+
         zed::set_language_server_installation_status(id, &LanguageServerInstallationStatus::None);
 
         let absolute = absolute_path(&relative_dll);
         self.cached_server_dll = Some(absolute.clone());
         Ok(absolute)
     }
+}
+
+/// The search pattern Roslyn's `--autoLoadProjects` uses for loose projects,
+/// and the same-length pattern we swap in. vb-ls 0.4.0 shipped without its
+/// own patch that adds `*.vbproj` to this search, so without a solution file
+/// VB projects were never loaded. `?` matches exactly one character here (it
+/// is not followed by a `.` or the end), so `*.??proj` finds `.csproj` and
+/// `.vbproj` (and `.fsproj`, which Roslyn skips).
+const LOOSE_PROJECT_PATTERN: &str = "*.csproj";
+const LOOSE_PROJECT_PATTERN_PATCHED: &str = "*.??proj";
+
+/// .NET stores string literals as UTF-16LE in the assembly's #US heap,
+/// prefixed by their byte length. Replacing a literal with one of the same
+/// length keeps that heap, and every token pointing into it, valid.
+fn utf16le(text: &str) -> Vec<u8> {
+    text.encode_utf16().flat_map(u16::to_le_bytes).collect()
+}
+
+/// Rewrites the loose-project search pattern inside the Roslyn server DLL.
+/// Returns `Ok(true)` if the file was changed, `Ok(false)` if it was already
+/// patched. Refuses to touch a file where the literal is not found exactly
+/// once, so a different build is left alone rather than corrupted.
+fn patch_vbproj_discovery_bytes(bytes: &mut [u8]) -> Result<bool> {
+    let needle = utf16le(LOOSE_PROJECT_PATTERN);
+    let replacement = utf16le(LOOSE_PROJECT_PATTERN_PATCHED);
+    debug_assert_eq!(needle.len(), replacement.len());
+
+    let positions: Vec<usize> = bytes
+        .windows(needle.len())
+        .enumerate()
+        .filter(|(_, window)| *window == needle.as_slice())
+        .map(|(position, _)| position)
+        .collect();
+
+    match positions.as_slice() {
+        [position] => {
+            bytes[*position..*position + replacement.len()].copy_from_slice(&replacement);
+            Ok(true)
+        }
+        [] if bytes
+            .windows(replacement.len())
+            .any(|window| window == replacement.as_slice()) =>
+        {
+            Ok(false)
+        }
+        [] => Err(format!("`{LOOSE_PROJECT_PATTERN}` not found")),
+        _ => Err(format!(
+            "`{LOOSE_PROJECT_PATTERN}` found {} times",
+            positions.len()
+        )),
+    }
+}
+
+fn patch_vbproj_discovery(dll: &str) -> Result<bool> {
+    let mut bytes = fs::read(dll).map_err(|err| format!("reading {dll}: {err}"))?;
+    if !patch_vbproj_discovery_bytes(&mut bytes)? {
+        return Ok(false);
+    }
+    // Write beside the original and rename over it, so an interrupted write
+    // never leaves a truncated DLL behind.
+    let temporary = format!("{dll}.patching");
+    fs::write(&temporary, &bytes).map_err(|err| format!("writing {temporary}: {err}"))?;
+    if fs::rename(&temporary, dll).is_err() {
+        // Some hosts refuse to rename over an existing file; overwrite instead.
+        fs::remove_file(&temporary).ok();
+        fs::write(dll, &bytes).map_err(|err| format!("writing {dll}: {err}"))?;
+    }
+    Ok(true)
 }
 
 /// Deletes `vb-ls-*` directories left behind by older pinned versions.
@@ -137,9 +210,8 @@ fn default_server_args() -> Vec<String> {
         // notification and never loads anything. With it, Roslyn opens the
         // single .sln/.slnx at the worktree root, or the one named by
         // `.vscode/settings.json` -> `"dotnet.defaultSolution"`. Failing that
-        // it loads loose projects, but vb-ls 0.4.0 only looks for *.csproj
-        // there (its *.vbproj patch landed after the release), so VB projects
-        // need a solution.
+        // it searches for loose projects (see `patch_vbproj_discovery`), which
+        // is racy inside Roslyn, so a solution is the reliable route.
         "--autoLoadProjects".into(),
         "--logLevel".into(),
         "Information".into(),
@@ -453,6 +525,50 @@ mod tests {
             flat["visual_basic|navigation.dotnet_navigate_to_decompiled_sources"],
             json!(false)
         );
+    }
+
+    #[test]
+    fn patches_project_pattern_once_and_is_idempotent() {
+        let mut bytes = b"\x11prefix".to_vec();
+        bytes.extend(utf16le("*.csproj"));
+        bytes.extend(b"\x00suffix");
+        let original_len = bytes.len();
+
+        assert_eq!(patch_vbproj_discovery_bytes(&mut bytes), Ok(true));
+        assert_eq!(bytes.len(), original_len);
+        assert!(bytes
+            .windows(16)
+            .any(|window| window == utf16le("*.??proj").as_slice()));
+        assert!(bytes.starts_with(b"\x11prefix") && bytes.ends_with(b"\x00suffix"));
+
+        // Second run: already patched, nothing to do.
+        let snapshot = bytes.clone();
+        assert_eq!(patch_vbproj_discovery_bytes(&mut bytes), Ok(false));
+        assert_eq!(bytes, snapshot);
+    }
+
+    #[test]
+    fn refuses_unexpected_builds() {
+        let mut missing = b"no pattern here".to_vec();
+        assert!(patch_vbproj_discovery_bytes(&mut missing).is_err());
+
+        let mut twice = utf16le("*.csproj");
+        twice.extend(utf16le("*.csproj"));
+        let snapshot = twice.clone();
+        assert!(patch_vbproj_discovery_bytes(&mut twice).is_err());
+        assert_eq!(twice, snapshot, "must not modify an unexpected file");
+    }
+
+    /// Patches a real server DLL: `VB_LS_DLL=/path/to/dll cargo test -- --ignored`.
+    #[test]
+    #[ignore]
+    fn patch_real_dll() {
+        let dll = std::env::var("VB_LS_DLL").expect("set VB_LS_DLL");
+        println!("changed: {:?}", patch_vbproj_discovery(&dll));
+        let bytes = fs::read(&dll).unwrap();
+        assert!(bytes
+            .windows(16)
+            .any(|window| window == utf16le("*.??proj").as_slice()));
     }
 
     #[test]

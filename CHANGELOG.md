@@ -15,6 +15,9 @@
 - **Coloured completion and symbol labels** by kind.
 - **Tasks:** MSBuild (via vswhere) build/rebuild/run/vstest for .NET Framework
   projects on Windows, and `dotnet build/test/run` for SDK-style projects.
+- **`.vbproj` discovery without a solution.** vb-ls 0.4.0 searched only `*.csproj`, so the
+  downloaded server is patched to search `*.??proj` (a same-length string in the DLL).
+  Loading through a solution is still recommended: Roslyn's loose-project loading is racy.
 - **Run buttons** (`runnables.scm`) on `Sub Main`, MSTest/NUnit/xUnit test methods
   and test classes.
 - **65 snippets** for blocks, members, properties, events, XML docs and tests.
