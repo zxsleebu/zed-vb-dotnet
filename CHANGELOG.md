@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.2.0
+
+- **Language server.** vb-ls (Roslyn with Visual Basic enabled) provides completion,
+  go to definition/implementation, find references, rename, hover, signature help,
+  diagnostics, code actions, formatting, symbols and inlay hints. It is taken from
+  `lsp.vb-ls.binary.path`, then `vb-ls` on PATH, and otherwise a pinned 0.4.0 is
+  downloaded from nuget.org. Needs the .NET 10 SDK. Projects load automatically from
+  the worktree's `.sln`/`.slnx` or `.vbproj` files.
+- **Roslyn options** are sent in the flat `visual_basic|group.option` form Roslyn
+  requests, so settings actually apply in Zed. Users can override them under
+  `lsp.vb-ls.settings`.
+- **Coloured completion and symbol labels** by kind.
+- **Tasks:** MSBuild (via vswhere) build/rebuild/run/vstest for .NET Framework
+  projects on Windows, and `dotnet build/test/run` for SDK-style projects.
+- **Run buttons** (`runnables.scm`) on `Sub Main`, MSTest/NUnit/xUnit test methods
+  and test classes.
+- **65 snippets** for blocks, members, properties, events, XML docs and tests.
+- **`overrides.scm`**, so a `"` typed inside a string or comment is no longer
+  auto-closed (`not_in` had no effect before).
+- **`textobjects.scm`** for Vim mode (`af`/`if`, `ac`/`ic`, `gc`, `]m`, `]]`).
+- **Line-based indentation** while a block is still unterminated, after `If … Then`,
+  `Sub`, `For`, `Try` and so on. `Case` lines align with the previous `Case`.
+- **More highlighting:** constants, local variables and loop variables.
+- ```` ```vb ```` code fences in Markdown are highlighted as VB.NET.
+
 ## 0.1.0
 
 Initial release.

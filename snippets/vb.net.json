@@ -1,0 +1,592 @@
+{
+	"Option header": {
+		"prefix": "options",
+		"body": [
+			"Option Strict On",
+			"Option Explicit On",
+			"Option Infer On",
+			"$0"
+		],
+		"description": "Option Strict/Explicit/Infer On"
+	},
+	"Imports": {
+		"prefix": "imports",
+		"body": [
+			"Imports ${1:System}$0"
+		],
+		"description": "Imports statement"
+	},
+	"Namespace": {
+		"prefix": "namespace",
+		"body": [
+			"Namespace ${1:Name}",
+			"\t$0",
+			"End Namespace"
+		],
+		"description": "Namespace block"
+	},
+	"Class": {
+		"prefix": "class",
+		"body": [
+			"Public Class ${1:Name}",
+			"\t$0",
+			"End Class"
+		],
+		"description": "Class"
+	},
+	"Class Inherits": {
+		"prefix": "classi",
+		"body": [
+			"Public Class ${1:Name}",
+			"\tInherits ${2:BaseClass}",
+			"",
+			"\t$0",
+			"End Class"
+		],
+		"description": "Class that inherits a base class"
+	},
+	"Class Implements": {
+		"prefix": "classimpl",
+		"body": [
+			"Public Class ${1:Name}",
+			"\tImplements ${2:IInterface}",
+			"",
+			"\t$0",
+			"End Class"
+		],
+		"description": "Class that implements an interface"
+	},
+	"Module": {
+		"prefix": "module",
+		"body": [
+			"Module ${1:Name}",
+			"\t$0",
+			"End Module"
+		],
+		"description": "Module"
+	},
+	"Module Program with Main": {
+		"prefix": "main",
+		"body": [
+			"Module ${1:Program}",
+			"\tSub Main(args As String())",
+			"\t\t$0",
+			"\tEnd Sub",
+			"End Module"
+		],
+		"description": "Console entry point"
+	},
+	"Sub Main": {
+		"prefix": "submain",
+		"body": [
+			"Sub Main(args As String())",
+			"\t$0",
+			"End Sub"
+		],
+		"description": "Sub Main"
+	},
+	"Structure": {
+		"prefix": "struct",
+		"body": [
+			"Public Structure ${1:Name}",
+			"\t$0",
+			"End Structure"
+		],
+		"description": "Structure"
+	},
+	"Interface": {
+		"prefix": "interface",
+		"body": [
+			"Public Interface ${1:IName}",
+			"\t$0",
+			"End Interface"
+		],
+		"description": "Interface"
+	},
+	"Enum": {
+		"prefix": "enum",
+		"body": [
+			"Public Enum ${1:Name}",
+			"\t${2:Member1}",
+			"\t${3:Member2}$0",
+			"End Enum"
+		],
+		"description": "Enum"
+	},
+	"Delegate": {
+		"prefix": "delegate",
+		"body": [
+			"Public Delegate ${1|Sub,Function|} ${2:Name}(${3})$0"
+		],
+		"description": "Delegate declaration"
+	},
+	"Sub": {
+		"prefix": "sub",
+		"body": [
+			"${1|Public,Private,Friend,Protected|} Sub ${2:Name}(${3})",
+			"\t$0",
+			"End Sub"
+		],
+		"description": "Sub procedure"
+	},
+	"Function": {
+		"prefix": "func",
+		"body": [
+			"${1|Public,Private,Friend,Protected|} Function ${2:Name}(${3}) As ${4:Object}",
+			"\t$0",
+			"End Function"
+		],
+		"description": "Function"
+	},
+	"Async Function As Task": {
+		"prefix": "asub",
+		"body": [
+			"${1|Public,Private,Friend,Protected|} Async Function ${2:Name}Async(${3}) As Task",
+			"\t$0",
+			"End Function"
+		],
+		"description": "Async method without a result (prefer this over Async Sub)"
+	},
+	"Async Function As Task(Of T)": {
+		"prefix": "afunc",
+		"body": [
+			"${1|Public,Private,Friend,Protected|} Async Function ${2:Name}Async(${3}) As Task(Of ${4:T})",
+			"\t$0",
+			"End Function"
+		],
+		"description": "Async method with a result"
+	},
+	"Constructor": {
+		"prefix": "ctor",
+		"body": [
+			"Public Sub New(${1})",
+			"\t$0",
+			"End Sub"
+		],
+		"description": "Constructor (Sub New)"
+	},
+	"Auto property": {
+		"prefix": "prop",
+		"body": [
+			"Public Property ${1:Name} As ${2:String}$0"
+		],
+		"description": "Auto-implemented property"
+	},
+	"Full property": {
+		"prefix": "propfull",
+		"body": [
+			"Private _${1:name} As ${2:String}",
+			"",
+			"Public Property ${3:Name} As ${2:String}",
+			"\tGet",
+			"\t\tReturn _${1:name}",
+			"\tEnd Get",
+			"\tSet(value As ${2:String})",
+			"\t\t_${1:name} = value",
+			"\tEnd Set",
+			"End Property$0"
+		],
+		"description": "Property with a backing field"
+	},
+	"ReadOnly property": {
+		"prefix": "propr",
+		"body": [
+			"Public ReadOnly Property ${1:Name} As ${2:String}",
+			"\tGet",
+			"\t\tReturn ${3:Nothing}",
+			"\tEnd Get",
+			"End Property$0"
+		],
+		"description": "Read-only property"
+	},
+	"Property with change notification": {
+		"prefix": "propnotify",
+		"body": [
+			"Private _${1:name} As ${2:String}",
+			"",
+			"Public Property ${3:Name} As ${2:String}",
+			"\tGet",
+			"\t\tReturn _${1:name}",
+			"\tEnd Get",
+			"\tSet(value As ${2:String})",
+			"\t\tIf Not Equals(_${1:name}, value) Then",
+			"\t\t\t_${1:name} = value",
+			"\t\t\tRaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(NameOf(${3:Name})))",
+			"\t\tEnd If",
+			"\tEnd Set",
+			"End Property$0"
+		],
+		"description": "INotifyPropertyChanged property"
+	},
+	"Event": {
+		"prefix": "event",
+		"body": [
+			"Public Event ${1:Name} As EventHandler${2:(Of ${3:EventArgs})}$0"
+		],
+		"description": "Event declaration"
+	},
+	"Event handler": {
+		"prefix": "handler",
+		"body": [
+			"Private Sub ${1:Control}_${2:Click}(sender As Object, e As ${3:EventArgs}) Handles ${1:Control}.${2:Click}",
+			"\t$0",
+			"End Sub"
+		],
+		"description": "Event handler with Handles clause"
+	},
+	"Overrides ToString": {
+		"prefix": "tostring",
+		"body": [
+			"Public Overrides Function ToString() As String",
+			"\tReturn ${1:MyBase.ToString()}$0",
+			"End Function"
+		],
+		"description": "Override ToString"
+	},
+	"Operator": {
+		"prefix": "operator",
+		"body": [
+			"Public Shared Operator ${1:+}(${2:left} As ${3:T}, ${4:right} As ${3:T}) As ${5:T}",
+			"\t$0",
+			"End Operator"
+		],
+		"description": "Operator overload"
+	},
+	"Const": {
+		"prefix": "const",
+		"body": [
+			"${1|Public,Private,Friend|} Const ${2:Name} As ${3:Integer} = ${4:0}$0"
+		],
+		"description": "Constant"
+	},
+	"Dim": {
+		"prefix": "dim",
+		"body": [
+			"Dim ${1:name} As ${2:String} = ${3:Nothing}$0"
+		],
+		"description": "Variable declaration"
+	},
+	"Dim As New": {
+		"prefix": "dimnew",
+		"body": [
+			"Dim ${1:name} As New ${2:List(Of String)}($3)$0"
+		],
+		"description": "Variable declared with As New"
+	},
+	"If": {
+		"prefix": "if",
+		"body": [
+			"If ${1:condition} Then",
+			"\t$0",
+			"End If"
+		],
+		"description": "If block"
+	},
+	"If Else": {
+		"prefix": "ife",
+		"body": [
+			"If ${1:condition} Then",
+			"\t$2",
+			"Else",
+			"\t$0",
+			"End If"
+		],
+		"description": "If/Else block"
+	},
+	"ElseIf": {
+		"prefix": "elseif",
+		"body": [
+			"ElseIf ${1:condition} Then",
+			"\t$0"
+		],
+		"description": "ElseIf clause"
+	},
+	"If operator": {
+		"prefix": "iif",
+		"body": [
+			"If(${1:condition}, ${2:whenTrue}, ${3:whenFalse})$0"
+		],
+		"description": "Ternary If() operator"
+	},
+	"Select Case": {
+		"prefix": "select",
+		"body": [
+			"Select Case ${1:value}",
+			"\tCase ${2:1}",
+			"\t\t$3",
+			"\tCase Else",
+			"\t\t$0",
+			"End Select"
+		],
+		"description": "Select Case block"
+	},
+	"For": {
+		"prefix": "for",
+		"body": [
+			"For ${1:i} As Integer = ${2:0} To ${3:count - 1}",
+			"\t$0",
+			"Next"
+		],
+		"description": "For ... Next loop"
+	},
+	"For Step": {
+		"prefix": "forstep",
+		"body": [
+			"For ${1:i} As Integer = ${2:count - 1} To ${3:0} Step ${4:-1}",
+			"\t$0",
+			"Next"
+		],
+		"description": "For loop with Step"
+	},
+	"For Each": {
+		"prefix": "foreach",
+		"body": [
+			"For Each ${1:item} In ${2:collection}",
+			"\t$0",
+			"Next"
+		],
+		"description": "For Each ... Next loop"
+	},
+	"While": {
+		"prefix": "while",
+		"body": [
+			"While ${1:condition}",
+			"\t$0",
+			"End While"
+		],
+		"description": "While loop"
+	},
+	"Do While": {
+		"prefix": "dowhile",
+		"body": [
+			"Do While ${1:condition}",
+			"\t$0",
+			"Loop"
+		],
+		"description": "Do While ... Loop"
+	},
+	"Do Until": {
+		"prefix": "dountil",
+		"body": [
+			"Do Until ${1:condition}",
+			"\t$0",
+			"Loop"
+		],
+		"description": "Do Until ... Loop"
+	},
+	"Do Loop Until": {
+		"prefix": "doloop",
+		"body": [
+			"Do",
+			"\t$0",
+			"Loop Until ${1:condition}"
+		],
+		"description": "Do ... Loop Until (runs at least once)"
+	},
+	"Try Catch": {
+		"prefix": "try",
+		"body": [
+			"Try",
+			"\t$1",
+			"Catch ${2:ex} As ${3:Exception}",
+			"\t$0",
+			"End Try"
+		],
+		"description": "Try/Catch"
+	},
+	"Try Catch Finally": {
+		"prefix": "tryf",
+		"body": [
+			"Try",
+			"\t$1",
+			"Catch ${2:ex} As ${3:Exception}",
+			"\t$4",
+			"Finally",
+			"\t$0",
+			"End Try"
+		],
+		"description": "Try/Catch/Finally"
+	},
+	"Catch When": {
+		"prefix": "catchw",
+		"body": [
+			"Catch ${1:ex} As ${2:Exception} When ${3:condition}",
+			"\t$0"
+		],
+		"description": "Filtered Catch clause"
+	},
+	"Using": {
+		"prefix": "using",
+		"body": [
+			"Using ${1:resource} As New ${2:Type}($3)",
+			"\t$0",
+			"End Using"
+		],
+		"description": "Using block"
+	},
+	"With": {
+		"prefix": "with",
+		"body": [
+			"With ${1:object}",
+			"\t.$0",
+			"End With"
+		],
+		"description": "With block"
+	},
+	"SyncLock": {
+		"prefix": "lock",
+		"body": [
+			"SyncLock ${1:_lock}",
+			"\t$0",
+			"End SyncLock"
+		],
+		"description": "SyncLock block"
+	},
+	"AddHandler": {
+		"prefix": "addhandler",
+		"body": [
+			"AddHandler ${1:obj}.${2:Event}, AddressOf ${3:Handler}$0"
+		],
+		"description": "AddHandler statement"
+	},
+	"RaiseEvent": {
+		"prefix": "raise",
+		"body": [
+			"RaiseEvent ${1:Name}(Me, ${2:EventArgs.Empty})$0"
+		],
+		"description": "RaiseEvent statement"
+	},
+	"Throw": {
+		"prefix": "throw",
+		"body": [
+			"Throw New ${1:InvalidOperationException}(${2:\"message\"})$0"
+		],
+		"description": "Throw an exception"
+	},
+	"NotImplementedException": {
+		"prefix": "todo",
+		"body": [
+			"Throw New NotImplementedException()$0"
+		],
+		"description": "Throw NotImplementedException"
+	},
+	"ArgumentNullException check": {
+		"prefix": "argnull",
+		"body": [
+			"If ${1:arg} Is Nothing Then Throw New ArgumentNullException(NameOf(${1:arg}))$0"
+		],
+		"description": "Guard against Nothing"
+	},
+	"Lambda Function": {
+		"prefix": "lambda",
+		"body": [
+			"Function(${1:x}) ${2:x}$0"
+		],
+		"description": "Single-line lambda"
+	},
+	"Lambda Sub": {
+		"prefix": "sublambda",
+		"body": [
+			"Sub(${1:x})",
+			"\t$0",
+			"End Sub"
+		],
+		"description": "Multi-line Sub lambda"
+	},
+	"Region": {
+		"prefix": "region",
+		"body": [
+			"#Region \"${1:Name}\"",
+			"$0",
+			"#End Region"
+		],
+		"description": "#Region block"
+	},
+	"Console.WriteLine": {
+		"prefix": "cw",
+		"body": [
+			"Console.WriteLine($1)$0"
+		],
+		"description": "Console.WriteLine"
+	},
+	"Debug.WriteLine": {
+		"prefix": "dw",
+		"body": [
+			"Debug.WriteLine($1)$0"
+		],
+		"description": "Debug.WriteLine"
+	},
+	"MessageBox.Show": {
+		"prefix": "msg",
+		"body": [
+			"MessageBox.Show(${1:\"text\"}, ${2:\"caption\"})$0"
+		],
+		"description": "Windows Forms MessageBox"
+	},
+	"XML doc summary": {
+		"prefix": "summary",
+		"body": [
+			"''' <summary>",
+			"''' ${1:Description.}",
+			"''' </summary>$0"
+		],
+		"description": "XML doc summary"
+	},
+	"XML doc param": {
+		"prefix": "param",
+		"body": [
+			"''' <param name=\"${1:name}\">${2:Description.}</param>$0"
+		],
+		"description": "XML doc parameter"
+	},
+	"XML doc returns": {
+		"prefix": "returns",
+		"body": [
+			"''' <returns>${1:Description.}</returns>$0"
+		],
+		"description": "XML doc return value"
+	},
+	"MSTest test method": {
+		"prefix": "testm",
+		"body": [
+			"<TestMethod>",
+			"Public Sub ${1:Method}_${2:Scenario}_${3:Expected}()",
+			"\t$0",
+			"End Sub"
+		],
+		"description": "MSTest test method"
+	},
+	"MSTest test class": {
+		"prefix": "testc",
+		"body": [
+			"<TestClass>",
+			"Public Class ${1:Name}Tests",
+			"\t<TestMethod>",
+			"\tPublic Sub ${2:Test}()",
+			"\t\t$0",
+			"\tEnd Sub",
+			"End Class"
+		],
+		"description": "MSTest test class"
+	},
+	"NUnit test": {
+		"prefix": "test",
+		"body": [
+			"<Test>",
+			"Public Sub ${1:Method}_${2:Scenario}_${3:Expected}()",
+			"\t$0",
+			"End Sub"
+		],
+		"description": "NUnit test method"
+	},
+	"xUnit fact": {
+		"prefix": "fact",
+		"body": [
+			"<Fact>",
+			"Public Sub ${1:Method}_${2:Scenario}_${3:Expected}()",
+			"\t$0",
+			"End Sub"
+		],
+		"description": "xUnit test method"
+	}
+}

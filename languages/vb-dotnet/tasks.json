@@ -1,0 +1,161 @@
+[
+	{
+		"label": "VB: build solution (MSBuild)",
+		"command": "$sln = @(Get-ChildItem -LiteralPath '$ZED_WORKTREE_ROOT' -File | Where-Object { $_.Extension -in '.sln', '.slnx' }); if ($sln.Count -ne 1) { throw ('Expected exactly one .sln/.slnx in the worktree root, found ' + $sln.Count + '. Use a current-project task instead.') }; $sln = $sln[0].FullName; $msbuild = $env:VB_MSBUILD; if (-not $msbuild) { $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\\Installer\\vswhere.exe'; if (Test-Path -LiteralPath $vswhere) { $msbuild = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1 } }; if (-not $msbuild) { $msbuild = (Get-Command msbuild.exe -ErrorAction SilentlyContinue).Source }; if (-not $msbuild) { throw 'MSBuild.exe not found. Install Visual Studio or Build Tools for Visual Studio (.NET desktop build tools), or set the VB_MSBUILD environment variable to the full path of MSBuild.exe.' }; & $msbuild $sln -nologo -m -v:minimal -restore -p:RestorePackagesConfig=true; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }",
+		"cwd": "$ZED_WORKTREE_ROOT",
+		"shell": {
+			"with_arguments": {
+				"program": "powershell",
+				"args": [
+					"-NoProfile",
+					"-ExecutionPolicy",
+					"Bypass"
+				]
+			}
+		}
+	},
+	{
+		"label": "VB: rebuild solution (MSBuild)",
+		"command": "$sln = @(Get-ChildItem -LiteralPath '$ZED_WORKTREE_ROOT' -File | Where-Object { $_.Extension -in '.sln', '.slnx' }); if ($sln.Count -ne 1) { throw ('Expected exactly one .sln/.slnx in the worktree root, found ' + $sln.Count + '. Use a current-project task instead.') }; $sln = $sln[0].FullName; $msbuild = $env:VB_MSBUILD; if (-not $msbuild) { $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\\Installer\\vswhere.exe'; if (Test-Path -LiteralPath $vswhere) { $msbuild = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1 } }; if (-not $msbuild) { $msbuild = (Get-Command msbuild.exe -ErrorAction SilentlyContinue).Source }; if (-not $msbuild) { throw 'MSBuild.exe not found. Install Visual Studio or Build Tools for Visual Studio (.NET desktop build tools), or set the VB_MSBUILD environment variable to the full path of MSBuild.exe.' }; & $msbuild $sln -nologo -m -v:minimal -restore -p:RestorePackagesConfig=true -t:Rebuild; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }",
+		"cwd": "$ZED_WORKTREE_ROOT",
+		"shell": {
+			"with_arguments": {
+				"program": "powershell",
+				"args": [
+					"-NoProfile",
+					"-ExecutionPolicy",
+					"Bypass"
+				]
+			}
+		}
+	},
+	{
+		"label": "VB: build current project (MSBuild)",
+		"command": "$d = '$ZED_DIRNAME'; $proj = $null; while ($d -and -not $proj) { $proj = Get-ChildItem -LiteralPath $d -File -Filter *.vbproj -ErrorAction SilentlyContinue | Select-Object -First 1; if (-not $proj) { $d = Split-Path -Parent $d } }; if (-not $proj) { throw 'No .vbproj found in or above the current file''s folder.' }; $msbuild = $env:VB_MSBUILD; if (-not $msbuild) { $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\\Installer\\vswhere.exe'; if (Test-Path -LiteralPath $vswhere) { $msbuild = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1 } }; if (-not $msbuild) { $msbuild = (Get-Command msbuild.exe -ErrorAction SilentlyContinue).Source }; if (-not $msbuild) { throw 'MSBuild.exe not found. Install Visual Studio or Build Tools for Visual Studio (.NET desktop build tools), or set the VB_MSBUILD environment variable to the full path of MSBuild.exe.' }; & $msbuild $proj.FullName -nologo -m -v:minimal -restore -p:RestorePackagesConfig=true; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }",
+		"cwd": "$ZED_WORKTREE_ROOT",
+		"shell": {
+			"with_arguments": {
+				"program": "powershell",
+				"args": [
+					"-NoProfile",
+					"-ExecutionPolicy",
+					"Bypass"
+				]
+			}
+		}
+	},
+	{
+		"label": "VB: build and run current project (MSBuild)",
+		"command": "$d = '$ZED_DIRNAME'; $proj = $null; while ($d -and -not $proj) { $proj = Get-ChildItem -LiteralPath $d -File -Filter *.vbproj -ErrorAction SilentlyContinue | Select-Object -First 1; if (-not $proj) { $d = Split-Path -Parent $d } }; if (-not $proj) { throw 'No .vbproj found in or above the current file''s folder.' }; $msbuild = $env:VB_MSBUILD; if (-not $msbuild) { $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\\Installer\\vswhere.exe'; if (Test-Path -LiteralPath $vswhere) { $msbuild = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1 } }; if (-not $msbuild) { $msbuild = (Get-Command msbuild.exe -ErrorAction SilentlyContinue).Source }; if (-not $msbuild) { throw 'MSBuild.exe not found. Install Visual Studio or Build Tools for Visual Studio (.NET desktop build tools), or set the VB_MSBUILD environment variable to the full path of MSBuild.exe.' }; & $msbuild $proj.FullName -nologo -m -v:minimal -restore -p:RestorePackagesConfig=true; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $xml = [xml](Get-Content -LiteralPath $proj.FullName); $asm = @($xml.Project.PropertyGroup | ForEach-Object { $_.AssemblyName } | Where-Object { $_ -and $_ -notmatch '\\$\\(' })[0]; if (-not $asm) { $asm = $proj.BaseName }; $exe = Get-ChildItem -LiteralPath (Join-Path $proj.DirectoryName 'bin') -Recurse -File -Filter ($asm + '.exe') -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (-not $exe) { throw ('Build succeeded but ' + $asm + '.exe was not found under ' + (Join-Path $proj.DirectoryName 'bin')) }; Set-Location -LiteralPath $exe.DirectoryName; & $exe.FullName",
+		"cwd": "$ZED_WORKTREE_ROOT",
+		"shell": {
+			"with_arguments": {
+				"program": "powershell",
+				"args": [
+					"-NoProfile",
+					"-ExecutionPolicy",
+					"Bypass"
+				]
+			}
+		},
+		"tags": [
+			"vb-main"
+		]
+	},
+	{
+		"label": "VB: test $ZED_CUSTOM_vb_test_method (MSBuild + vstest)",
+		"command": "$d = '$ZED_DIRNAME'; $proj = $null; while ($d -and -not $proj) { $proj = Get-ChildItem -LiteralPath $d -File -Filter *.vbproj -ErrorAction SilentlyContinue | Select-Object -First 1; if (-not $proj) { $d = Split-Path -Parent $d } }; if (-not $proj) { throw 'No .vbproj found in or above the current file''s folder.' }; $msbuild = $env:VB_MSBUILD; if (-not $msbuild) { $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\\Installer\\vswhere.exe'; if (Test-Path -LiteralPath $vswhere) { $msbuild = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1 } }; if (-not $msbuild) { $msbuild = (Get-Command msbuild.exe -ErrorAction SilentlyContinue).Source }; if (-not $msbuild) { throw 'MSBuild.exe not found. Install Visual Studio or Build Tools for Visual Studio (.NET desktop build tools), or set the VB_MSBUILD environment variable to the full path of MSBuild.exe.' }; & $msbuild $proj.FullName -nologo -m -v:minimal -restore -p:RestorePackagesConfig=true; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $xml = [xml](Get-Content -LiteralPath $proj.FullName); $asm = @($xml.Project.PropertyGroup | ForEach-Object { $_.AssemblyName } | Where-Object { $_ -and $_ -notmatch '\\$\\(' })[0]; if (-not $asm) { $asm = $proj.BaseName }; $dll = Get-ChildItem -LiteralPath (Join-Path $proj.DirectoryName 'bin') -Recurse -File -Filter ($asm + '.dll') -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (-not $dll) { throw ('Build succeeded but ' + $asm + '.dll was not found under ' + (Join-Path $proj.DirectoryName 'bin')) }; $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\\Installer\\vswhere.exe'; $vstest = $null; if (Test-Path -LiteralPath $vswhere) { $vstest = & $vswhere -latest -prerelease -products * -find '**\\vstest.console.exe' | Select-Object -First 1 }; if (-not $vstest) { $vstest = (Get-Command vstest.console.exe -ErrorAction SilentlyContinue).Source }; if (-not $vstest) { throw 'vstest.console.exe not found. Install the Visual Studio testing tools, or use the dotnet test task for SDK-style test projects.' }; & $vstest $dll.FullName ('/Tests:$ZED_CUSTOM_vb_test_class.$ZED_CUSTOM_vb_test_method')",
+		"cwd": "$ZED_WORKTREE_ROOT",
+		"shell": {
+			"with_arguments": {
+				"program": "powershell",
+				"args": [
+					"-NoProfile",
+					"-ExecutionPolicy",
+					"Bypass"
+				]
+			}
+		},
+		"tags": [
+			"vb-test"
+		]
+	},
+	{
+		"label": "VB: test class $ZED_CUSTOM_vb_test_class (MSBuild + vstest)",
+		"command": "$d = '$ZED_DIRNAME'; $proj = $null; while ($d -and -not $proj) { $proj = Get-ChildItem -LiteralPath $d -File -Filter *.vbproj -ErrorAction SilentlyContinue | Select-Object -First 1; if (-not $proj) { $d = Split-Path -Parent $d } }; if (-not $proj) { throw 'No .vbproj found in or above the current file''s folder.' }; $msbuild = $env:VB_MSBUILD; if (-not $msbuild) { $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\\Installer\\vswhere.exe'; if (Test-Path -LiteralPath $vswhere) { $msbuild = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find 'MSBuild\\**\\Bin\\MSBuild.exe' | Select-Object -First 1 } }; if (-not $msbuild) { $msbuild = (Get-Command msbuild.exe -ErrorAction SilentlyContinue).Source }; if (-not $msbuild) { throw 'MSBuild.exe not found. Install Visual Studio or Build Tools for Visual Studio (.NET desktop build tools), or set the VB_MSBUILD environment variable to the full path of MSBuild.exe.' }; & $msbuild $proj.FullName -nologo -m -v:minimal -restore -p:RestorePackagesConfig=true; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $xml = [xml](Get-Content -LiteralPath $proj.FullName); $asm = @($xml.Project.PropertyGroup | ForEach-Object { $_.AssemblyName } | Where-Object { $_ -and $_ -notmatch '\\$\\(' })[0]; if (-not $asm) { $asm = $proj.BaseName }; $dll = Get-ChildItem -LiteralPath (Join-Path $proj.DirectoryName 'bin') -Recurse -File -Filter ($asm + '.dll') -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (-not $dll) { throw ('Build succeeded but ' + $asm + '.dll was not found under ' + (Join-Path $proj.DirectoryName 'bin')) }; $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\\Installer\\vswhere.exe'; $vstest = $null; if (Test-Path -LiteralPath $vswhere) { $vstest = & $vswhere -latest -prerelease -products * -find '**\\vstest.console.exe' | Select-Object -First 1 }; if (-not $vstest) { $vstest = (Get-Command vstest.console.exe -ErrorAction SilentlyContinue).Source }; if (-not $vstest) { throw 'vstest.console.exe not found. Install the Visual Studio testing tools, or use the dotnet test task for SDK-style test projects.' }; & $vstest $dll.FullName ('/Tests:$ZED_CUSTOM_vb_test_class.')",
+		"cwd": "$ZED_WORKTREE_ROOT",
+		"shell": {
+			"with_arguments": {
+				"program": "powershell",
+				"args": [
+					"-NoProfile",
+					"-ExecutionPolicy",
+					"Bypass"
+				]
+			}
+		},
+		"tags": [
+			"vb-test-class"
+		]
+	},
+	{
+		"label": "VB: dotnet build",
+		"command": "dotnet",
+		"args": [
+			"build"
+		],
+		"cwd": "$ZED_WORKTREE_ROOT"
+	},
+	{
+		"label": "VB: dotnet test",
+		"command": "dotnet",
+		"args": [
+			"test"
+		],
+		"cwd": "$ZED_WORKTREE_ROOT"
+	},
+	{
+		"label": "VB: dotnet test $ZED_CUSTOM_vb_test_method",
+		"command": "dotnet",
+		"args": [
+			"test",
+			"--filter",
+			"FullyQualifiedName~$ZED_CUSTOM_vb_test_class.$ZED_CUSTOM_vb_test_method"
+		],
+		"cwd": "$ZED_WORKTREE_ROOT",
+		"tags": [
+			"vb-test"
+		]
+	},
+	{
+		"label": "VB: dotnet test class $ZED_CUSTOM_vb_test_class",
+		"command": "dotnet",
+		"args": [
+			"test",
+			"--filter",
+			"FullyQualifiedName~$ZED_CUSTOM_vb_test_class"
+		],
+		"cwd": "$ZED_WORKTREE_ROOT",
+		"tags": [
+			"vb-test-class"
+		]
+	},
+	{
+		"label": "VB: dotnet run current project",
+		"command": "$d = '$ZED_DIRNAME'; $proj = $null; while ($d -and -not $proj) { $proj = Get-ChildItem -LiteralPath $d -File -Filter *.vbproj -ErrorAction SilentlyContinue | Select-Object -First 1; if (-not $proj) { $d = Split-Path -Parent $d } }; if (-not $proj) { throw 'No .vbproj found in or above the current file''s folder.' }; & dotnet run --project $proj.FullName",
+		"cwd": "$ZED_WORKTREE_ROOT",
+		"shell": {
+			"with_arguments": {
+				"program": "powershell",
+				"args": [
+					"-NoProfile",
+					"-ExecutionPolicy",
+					"Bypass"
+				]
+			}
+		},
+		"tags": [
+			"vb-main"
+		]
+	}
+]

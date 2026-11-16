@@ -1,10 +1,12 @@
 id = "vb-dotnet"
 name = "VB.NET"
-description = "Visual Basic .NET syntax highlighting, outline, bracket matching and auto-indent."
-version = "0.1.0"
+description = "Visual Basic .NET: highlighting, outline, auto-indent, snippets, tasks, and a Roslyn language server (completion, go to definition, diagnostics, rename)."
+version = "0.2.0"
 schema_version = 1
-authors = "Kellett"
+authors = ["Kellett"]
 repository = "https://github.com/Kellett/zed-vb-dotnet"
+
+snippets = ["./snippets/vb.net.json"]
 
 # The grammar key must stay "vb_dotnet": it has to match the `name` field in the
 # grammar's grammar.js, which is what the compiled parser exports.
@@ -14,3 +16,12 @@ repository = "https://github.com/Kellett/zed-vb-dotnet"
 [grammars.vb_dotnet]
 repository = "https://github.com/Kellett/tree-sitter-vb-dotnet"
 rev = "176b9587e48b4fcf52e5abcefeccfeb724319464"
+
+# vb-ls: the Roslyn language server with Visual Basic enabled. See src/lib.rs
+# for how it is located or downloaded.
+[language_servers.vb-ls]
+name = "vb-ls"
+languages = ["VB.NET"]
+
+[language_servers.vb-ls.language_ids]
+"VB.NET" = "vb"

@@ -34,3 +34,8 @@
 (case_else_block) @indent
 (catch_block) @indent
 (finally_block) @indent
+
+; Anchors for `decrease_indent_patterns` in config.toml: a new `Case` line
+; aligns with the previous one.
+(case_block) @start.case
+(case_else_block) @start.case

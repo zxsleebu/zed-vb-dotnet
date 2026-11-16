@@ -200,6 +200,11 @@
 (event_declaration name: (identifier) @property)
 (raise_event_statement name: (identifier) @property)
 
+(const_declaration name: (identifier) @constant)
+(variable_declarator name: (identifier) @variable)
+(for_statement variable: (identifier) @variable)
+(for_each_statement variable: (identifier) @variable)
+
 (parameter name: (identifier) @variable.parameter)
 (lambda_parameter name: (identifier) @variable.parameter)
 

@@ -4,7 +4,27 @@ path_suffixes = ["vb"]
 line_comments = ["' "]
 tab_size = 4
 hard_tabs = true
+# Lets ```vb fenced blocks in Markdown pick up VB.NET highlighting.
+code_fence_block_name = "vb"
 autoclose_before = ",)]}"
+
+# Line-based indentation, combined with indents.scm. indents.scm only works
+# once a block is complete (`End If` typed), so these cover the moment you
+# press Enter after `If x Then` and the block is still unterminated.
+#
+# Deliberately not listed: `Property` and `Event` (an auto-property or a plain
+# event declaration is a single line, indistinguishable from a block header),
+# and `MustOverride` / `Declare` / `Delegate` members, which have no body.
+# Rust's regex crate has no look-around, so the patterns stay simple.
+increase_indent_pattern = '(?i)^\s*(((public|private|protected|friend|shared|overrides|overridable|notoverridable|overloads|shadows|partial|mustinherit|notinheritable|async|iterator|widening|narrowing)\s+)*(namespace|class|module|structure|interface|enum|sub|function|operator|get|set)\b|(select|case|while|do|for|try|catch|finally|with|using|synclock|else|elseif|#region)\b|.*\bthen\s*(\x27.*)?$)'
+decrease_indent_pattern = '(?i)^\s*(end|next|loop|else|elseif|catch|finally|#end\s+region)\b'
+
+# `Case` lines align with the previous `Case` rather than outdenting, so the
+# first `Case` under `Select Case` stays indented one level (Visual Studio
+# style). The `@start.case` marks come from indents.scm.
+decrease_indent_patterns = [
+	{ pattern = '(?i)^\s*case\b', valid_after = ["case"] },
+]
 
 brackets = [
 	{ start = "(", end = ")", close = true, newline = false },
