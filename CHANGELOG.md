@@ -6,7 +6,8 @@
   go to definition/implementation, find references, rename, hover, signature help,
   diagnostics, code actions, formatting, symbols and inlay hints. It is taken from
   `lsp.vb-ls.binary.path`, then `vb-ls` on PATH, and otherwise a pinned 0.4.0 is
-  downloaded from nuget.org. Needs the .NET 10 SDK. Projects load automatically from
+  downloaded from nuget.org. Needs the .NET 10 SDK or newer (runs on
+  .NET 11 via roll-forward). Projects load automatically from
   the worktree's `.sln`/`.slnx` or `.vbproj` files.
 - **Roslyn options** are sent in the flat `visual_basic|group.option` form Roslyn
   requests, so settings actually apply in Zed. Users can override them under

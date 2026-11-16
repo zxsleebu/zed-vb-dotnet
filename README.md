@@ -16,9 +16,11 @@ Visual Basic .NET support for the [Zed](https://zed.dev) editor:
 
 ### Requirements
 
-- **.NET 10 SDK** ([download](https://dotnet.microsoft.com/download/dotnet/10.0)), with
-  `dotnet` on PATH. The language server runs on it and uses its MSBuild to load your
-  projects. You need it even if your projects target an older .NET or .NET Framework.
+- **.NET 10 SDK or newer** ([download](https://dotnet.microsoft.com/download/dotnet)),
+  with `dotnet` on PATH. The language server runs on it and uses its MSBuild to load
+  your projects. You need it even if your projects target an older .NET or .NET
+  Framework. A newer SDK, such as .NET 11, works on its own; the server rolls forward
+  to it.
 - **For .NET Framework projects** (the long, non-SDK-style `.vbproj` files): Windows
   with Visual Studio 2022 or *Build Tools for Visual Studio*. Include the *.NET desktop
   build tools* workload and the targeting packs for your framework version. The

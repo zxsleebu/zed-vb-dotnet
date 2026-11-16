@@ -5,7 +5,7 @@
 //!
 //! The server is [vb-ls](https://github.com/CoolCoderSuper/vb-ls): Microsoft's
 //! Roslyn language server (the one behind the VS Code C# extension) with a
-//! small patch that switches Visual Basic on. It needs a .NET 10 SDK, which it
+//! small patch that switches Visual Basic on. It needs a .NET 10+ SDK, which it
 //! uses (through MSBuild) to load `.sln` / `.vbproj` files.
 //!
 //! The server binary is resolved in this order:
@@ -38,7 +38,7 @@ const VB_LS_VERSION: &str = "0.4.0";
 const SERVER_DLL_IN_PACKAGE: &str =
     "tools/net10.0/any/roslyn-lsp/Microsoft.CodeAnalysis.LanguageServer.dll";
 
-const DOTNET_DOWNLOAD_URL: &str = "https://dotnet.microsoft.com/download/dotnet/10.0";
+const DOTNET_DOWNLOAD_URL: &str = "https://dotnet.microsoft.com/download/dotnet";
 
 struct VbDotnetExtension {
     /// Absolute path of the downloaded server DLL, once verified to exist.
@@ -261,6 +261,13 @@ impl zed::Extension for VbDotnetExtension {
         let user_path = binary_settings.and_then(|b| b.path);
 
         let mut env: HashMap<String, String> = worktree.shell_env().into_iter().collect();
+        // vb-ls targets .NET 10. The Roslyn DLL we launch already declares
+        // `rollForward: Major`, but the `vb-ls` dotnet-tool shim does not, so
+        // on a machine with only a newer runtime (e.g. .NET 11) it would fail
+        // with "framework 10.0.0 not found". Major still prefers 10.x when it
+        // is installed.
+        env.entry("DOTNET_ROLL_FORWARD".into())
+            .or_insert_with(|| "Major".into());
         if let Some(user_env) = user_env {
             env.extend(user_env);
         }
@@ -288,7 +295,7 @@ impl zed::Extension for VbDotnetExtension {
         let Some(dotnet) = worktree.which("dotnet") else {
             return Err(format!(
                 "VB.NET language server: `dotnet` was not found on PATH. \
-                 Install the .NET 10 SDK from {DOTNET_DOWNLOAD_URL} and restart Zed. \
+                 Install the .NET SDK (10 or newer) from {DOTNET_DOWNLOAD_URL} and restart Zed. \
                  (vb-ls is downloaded automatically after that; to manage it yourself \
                  run `dotnet tool install -g vb-ls`.)"
             ));
@@ -354,7 +361,10 @@ impl zed::Extension for VbDotnetExtension {
         };
 
         let label = completion.label;
-        let mut spans = vec![CodeLabelSpan::literal(label.clone(), Some(highlight.into()))];
+        let mut spans = vec![CodeLabelSpan::literal(
+            label.clone(),
+            Some(highlight.into()),
+        )];
         if let Some(detail) = completion
             .label_details
             .and_then(|details| details.detail)
@@ -433,7 +443,10 @@ mod tests {
         assert!(flat
             .get("csharp|completion.dotnet_show_name_completion_suggestions")
             .is_none());
-        assert_eq!(flat["navigation.dotnet_navigate_to_decompiled_sources"], json!(false));
+        assert_eq!(
+            flat["navigation.dotnet_navigate_to_decompiled_sources"],
+            json!(false)
+        );
         assert_eq!(
             flat["visual_basic|navigation.dotnet_navigate_to_decompiled_sources"],
             json!(false)
