@@ -20,6 +20,10 @@
   `*.??proj` instead of `*.csproj`, so `.vbproj` files are found, and a race that freed
   the project list before the loader read it is removed. Before, VB files often ended
   up with no project and `<Missing Core Assembly>` errors.
+- **mscorlib for .NET Framework VB projects.** The server ignored the core library that
+  the VB compiler takes from `/sdkpath`, so old-style `.vbproj` projects loaded with no
+  `Object` or `String` (`<Missing Core Assembly>`). The VB command-line parser in the
+  downloaded server is patched to add it as a regular reference.
 - **Run buttons** (`runnables.scm`) on `Sub Main`, MSTest/NUnit/xUnit test methods
   and test classes.
 - **65 snippets** for blocks, members, properties, events, XML docs and tests.

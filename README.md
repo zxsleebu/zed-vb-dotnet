@@ -119,6 +119,17 @@ bytes match that exact build):
   `<Missing Core Assembly>` containing the type `Object` is required"* or *"type
   `System.String` is not defined"*. The extension skips that early free.
 
+A third fix applies however the project is loaded. .NET Framework VB projects get
+`mscorlib` from the compiler's `/sdkpath` rather than from a `/reference`, and the server
+dropped it, so even a loaded project showed the same errors. The extension patches the
+VB command-line parser to put `mscorlib.dll` from `/sdkpath` into the references.
+SDK-style projects (`<Project Sdk=...>`) were never affected.
+
+The log line *"project … has unresolved dependencies"* (German: *"weist nicht aufgelöste
+Abhängigkeiten auf"*) is expected for projects using `packages.config`: the server looks
+for the `obj/project.assets.json` that only `PackageReference` projects have. Packages
+from `packages.config` still resolve once restored (build once in Visual Studio).
+
 To check, open **dev: open language server logs** -> *vb-ls*. It should say
 `Found single solution file`, `Using VS Code settings to auto load solution` or
 `Discovered N projects to auto load`, followed by a successful load of your `.vbproj`.

@@ -101,7 +101,9 @@ impl VbDotnetExtension {
         // Runs on every start, so copies downloaded before a patch existed get
         // fixed too. A failure only costs loading projects without a solution,
         // so it must not keep the server from starting.
-        let _ = patch_server_dll(&relative_dll);
+        if let Some((server_dir, _)) = relative_dll.rsplit_once('/') {
+            patch_server(server_dir);
+        }
 
         zed::set_language_server_installation_status(id, &LanguageServerInstallationStatus::None);
 
@@ -111,9 +113,11 @@ impl VbDotnetExtension {
     }
 }
 
-/// A same-length byte replacement inside the Roslyn server DLL. Keeping the
-/// length means no offset, RVA or metadata token in the file moves.
+/// A same-length byte replacement inside one of the server's DLLs. Keeping
+/// the length means no offset, RVA or metadata token in the file moves.
 struct BytePatch {
+    /// The DLL, relative to the directory holding the server DLL.
+    file: &'static str,
     name: &'static str,
     original: Vec<u8>,
     patched: Vec<u8>,
@@ -126,7 +130,10 @@ fn utf16le(text: &str) -> Vec<u8> {
     text.encode_utf16().flat_map(u16::to_le_bytes).collect()
 }
 
-/// The fixes applied to vb-ls 0.4.0's `Microsoft.CodeAnalysis.LanguageServer.dll`.
+const LANGUAGE_SERVER_DLL: &str = "Microsoft.CodeAnalysis.LanguageServer.dll";
+const VISUAL_BASIC_DLL: &str = "Microsoft.CodeAnalysis.VisualBasic.dll";
+
+/// The fixes applied to vb-ls 0.4.0. Each is pinned to that exact build.
 fn server_patches() -> Vec<BytePatch> {
     vec![
         // The search pattern `--autoLoadProjects` uses for loose projects.
@@ -136,6 +143,7 @@ fn server_patches() -> Vec<BytePatch> {
         // `*.??proj` finds `.csproj` and `.vbproj` (and `.fsproj`/`.shproj`,
         // which Roslyn skips).
         BytePatch {
+            file: LANGUAGE_SERVER_DLL,
             name: "loose .vbproj discovery",
             original: utf16le("*.csproj"),
             patched: utf16le("*.??proj"),
@@ -155,6 +163,7 @@ fn server_patches() -> Vec<BytePatch> {
         // The builder is then never returned to the pool and is simply
         // garbage collected. The field token pins this to the one call site.
         BytePatch {
+            file: LANGUAGE_SERVER_DLL,
             name: "loose project load race",
             original: vec![
                 0x06, 0x16, 0x2f, 0x11, 0x02, 0x7c, 0x6b, 0x02, 0x00, 0x04, 0xfe, 0x16, 0x6a, 0x00,
@@ -163,6 +172,37 @@ fn server_patches() -> Vec<BytePatch> {
             patched: vec![
                 0x2b, 0x13, 0x00, 0x00, 0x02, 0x7c, 0x6b, 0x02, 0x00, 0x04, 0xfe, 0x16, 0x6a, 0x00,
                 0x00, 0x1b, 0x6f, 0x37, 0x00, 0x00, 0x0a, 0xdc,
+            ],
+        },
+        // .NET Framework VB projects compile with `/nostdlib /sdkpath:<reference
+        // assemblies>`: unlike C#, VB gets mscorlib from the SDK path, not from a
+        // `/reference`. `VisualBasicCommandLineParser.Parse` stores it apart, in
+        // `DefaultCoreLibraryReference`, but the language server only reads
+        // `MetadataReferences`, so these projects had no mscorlib at all
+        // ("<Missing Core Assembly>", "type 'System.String' is not defined").
+        // Right after that lookup, Parse adds `System.dll` from the SDK path
+        // unless `/nostdlib` is given:
+        //
+        //   ldloc.s noStdLib; brtrue.s SKIP          ->  nop x4
+        //   ldloc.s sdkPaths; ldstr "System.dll"     ->  ldstr "mscorlib.dll"
+        //   ldarg.2; call FindFileInSdkPath ...; add the reference
+        //
+        // so it now always adds mscorlib.dll from the SDK path instead. That
+        // `System.dll` is only ever added without `/nostdlib`, which MSBuild's VB
+        // targets always pass, and they list System.dll as a `/reference`
+        // anyway. SDK-style projects pass `/nosdkpath`, so nothing is found and
+        // nothing changes for them. The `ldstr` tokens are this build's
+        // "System.dll" (0x70007710) and "mscorlib.dll" (0x70007772).
+        BytePatch {
+            file: VISUAL_BASIC_DLL,
+            name: "VB mscorlib from /sdkpath",
+            original: vec![
+                0x11, 0x0f, 0x2d, 0x4d, 0x11, 0x2c, 0x72, 0x10, 0x77, 0x00, 0x70, 0x04, 0x28, 0xcd,
+                0x28, 0x00, 0x06,
+            ],
+            patched: vec![
+                0x00, 0x00, 0x00, 0x00, 0x11, 0x2c, 0x72, 0x72, 0x77, 0x00, 0x70, 0x04, 0x28, 0xcd,
+                0x28, 0x00, 0x06,
             ],
         },
     ]
@@ -195,7 +235,7 @@ fn apply_patch(bytes: &mut [u8], patch: &BytePatch) -> Result<bool> {
 
 /// Applies every patch that fits; one that does not is skipped without
 /// blocking the others. Returns whether anything changed.
-fn patch_server_bytes(bytes: &mut [u8], patches: &[BytePatch]) -> bool {
+fn patch_server_bytes(bytes: &mut [u8], patches: &[&BytePatch]) -> bool {
     let mut changed = false;
     for patch in patches {
         if let Ok(true) = apply_patch(bytes, patch) {
@@ -205,19 +245,35 @@ fn patch_server_bytes(bytes: &mut [u8], patches: &[BytePatch]) -> bool {
     changed
 }
 
-fn patch_server_dll(dll: &str) -> Result<bool> {
-    let mut bytes = fs::read(dll).map_err(|err| format!("reading {dll}: {err}"))?;
-    if !patch_server_bytes(&mut bytes, &server_patches()) {
+/// Applies [`server_patches`] to the DLLs in `server_dir`. Returns whether
+/// any file changed. A file that cannot be read or written is skipped.
+fn patch_server(server_dir: &str) -> bool {
+    let patches = server_patches();
+    let mut files: Vec<&str> = patches.iter().map(|patch| patch.file).collect();
+    files.dedup();
+    let mut changed = false;
+    for file in files {
+        let ours: Vec<&BytePatch> = patches.iter().filter(|patch| patch.file == file).collect();
+        if let Ok(true) = patch_file(&format!("{server_dir}/{file}"), &ours) {
+            changed = true;
+        }
+    }
+    changed
+}
+
+fn patch_file(path: &str, patches: &[&BytePatch]) -> Result<bool> {
+    let mut bytes = fs::read(path).map_err(|err| format!("reading {path}: {err}"))?;
+    if !patch_server_bytes(&mut bytes, patches) {
         return Ok(false);
     }
     // Write beside the original and rename over it, so an interrupted write
     // never leaves a truncated DLL behind.
-    let temporary = format!("{dll}.patching");
+    let temporary = format!("{path}.patching");
     fs::write(&temporary, &bytes).map_err(|err| format!("writing {temporary}: {err}"))?;
-    if fs::rename(&temporary, dll).is_err() {
+    if fs::rename(&temporary, path).is_err() {
         // Some hosts refuse to rename over an existing file; overwrite instead.
         fs::remove_file(&temporary).ok();
-        fs::write(dll, &bytes).map_err(|err| format!("writing {dll}: {err}"))?;
+        fs::write(path, &bytes).map_err(|err| format!("writing {path}: {err}"))?;
     }
     Ok(true)
 }
@@ -572,6 +628,7 @@ mod tests {
 
     fn test_patch() -> BytePatch {
         BytePatch {
+            file: "test.dll",
             name: "test",
             original: utf16le("*.csproj"),
             patched: utf16le("*.??proj"),
@@ -611,8 +668,9 @@ mod tests {
     #[test]
     fn one_failing_patch_does_not_block_the_others() {
         let patches = server_patches();
+        let all: Vec<&BytePatch> = patches.iter().collect();
         let mut bytes = patches[1].original.clone();
-        assert!(patch_server_bytes(&mut bytes, &patches));
+        assert!(patch_server_bytes(&mut bytes, &all));
         assert_eq!(bytes, patches[1].patched);
     }
 
@@ -623,14 +681,16 @@ mod tests {
         }
     }
 
-    /// Patches a real server DLL: `VB_LS_DLL=/path/to/dll cargo test -- --ignored`.
+    /// Patches a real server directory (the one holding
+    /// Microsoft.CodeAnalysis.LanguageServer.dll):
+    /// `VB_LS_DIR=/path cargo test -- --ignored`.
     #[test]
     #[ignore]
-    fn patch_real_dll() {
-        let dll = std::env::var("VB_LS_DLL").expect("set VB_LS_DLL");
-        println!("changed: {:?}", patch_server_dll(&dll));
-        let bytes = fs::read(&dll).unwrap();
+    fn patch_real_server() {
+        let dir = std::env::var("VB_LS_DIR").expect("set VB_LS_DIR");
+        println!("changed: {}", patch_server(&dir));
         for patch in server_patches() {
+            let bytes = fs::read(format!("{dir}/{}", patch.file)).unwrap();
             assert_eq!(find_all(&bytes, &patch.patched).len(), 1, "{}", patch.name);
             assert!(
                 find_all(&bytes, &patch.original).is_empty(),
