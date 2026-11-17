@@ -15,9 +15,11 @@
 - **Coloured completion and symbol labels** by kind.
 - **Tasks:** MSBuild (via vswhere) build/rebuild/run/vstest for .NET Framework
   projects on Windows, and `dotnet build/test/run` for SDK-style projects.
-- **`.vbproj` discovery without a solution.** vb-ls 0.4.0 searched only `*.csproj`, so the
-  downloaded server is patched to search `*.??proj` (a same-length string in the DLL).
-  Loading through a solution is still recommended: Roslyn's loose-project loading is racy.
+- **Projects load without a solution.** The downloaded vb-ls 0.4.0 is patched in two
+  places (same-length byte swaps, only on that exact build): loose-project search uses
+  `*.??proj` instead of `*.csproj`, so `.vbproj` files are found, and a race that freed
+  the project list before the loader read it is removed. Before, VB files often ended
+  up with no project and `<Missing Core Assembly>` errors.
 - **Run buttons** (`runnables.scm`) on `Sub Main`, MSTest/NUnit/xUnit test methods
   and test classes.
 - **65 snippets** for blocks, members, properties, events, XML docs and tests.

@@ -95,35 +95,35 @@ so diagnostics match what Visual Studio shows.
    nuget.org into its own folder and runs it with your `dotnet`. nuget.org package
    versions are immutable, so this is always the same build.
 
-**Which projects load.** VB projects are only found through a solution:
+**Which projects load.** The server looks, in this order, for:
 
-- If the folder you opened in Zed has exactly one `.sln` or `.slnx` at its root, the
-  server opens that solution, VB projects included.
-- Otherwise, name the solution in `.vscode/settings.json` in that folder. Roslyn reads
-  this file even outside VS Code, and the path is relative to the folder:
+1. the solution named in `.vscode/settings.json` in the folder you opened in Zed.
+   Roslyn reads this file even outside VS Code, and the path is relative to the folder:
 
-  ```json
-  { "dotnet.defaultSolution": "src/MyApp.sln" }
-  ```
+   ```json
+   { "dotnet.defaultSolution": "src/MyApp.sln" }
+   ```
 
-- Without a solution, the server falls back to searching the folder for project files.
-  vb-ls 0.4.0 shipped searching only for `*.csproj` (its `.vbproj` fix came after the
-  release), so the extension patches the downloaded server to search `*.??proj`
-  instead. That is a same-length string swap in the DLL, and covers `.vbproj`. This
-  fallback is **unreliable** in Roslyn itself, though. It hands the project list to a
-  background task and then frees the list, so sometimes nothing loads. VB files then
-  open with no project and no references: `Dictionary`, `List` and everything from
-  referenced assemblies shows as unknown. **Use a solution.** If you have none, create
-  one at the root:
+2. exactly one `.sln` or `.slnx` at the folder's root;
+3. otherwise every `.vbproj` and `.csproj` anywhere under the folder.
 
-  ```powershell
-  dotnet new sln -n All
-  dotnet sln All.sln add (Get-ChildItem -Recurse -Include *.vbproj, *.csproj)
-  ```
+The third step needed two fixes in vb-ls 0.4.0, which the extension applies to the
+downloaded server (both are same-length byte swaps in the DLL, applied only when the
+bytes match that exact build):
+
+- it searched only `*.csproj` (the `.vbproj` change came after the release), so the
+  pattern becomes `*.??proj`;
+- it handed the project list to a background task and then freed the list, usually
+  before the task had read it, so nothing loaded. VB files then opened with no project
+  and no references, with errors like *"a reference to the assembly
+  `<Missing Core Assembly>` containing the type `Object` is required"* or *"type
+  `System.String` is not defined"*. The extension skips that early free.
 
 To check, open **dev: open language server logs** -> *vb-ls*. It should say
-`Found single solution file` or `Using VS Code settings to auto load solution`, followed
-by a successful load of your `.vbproj`.
+`Found single solution file`, `Using VS Code settings to auto load solution` or
+`Discovered N projects to auto load`, followed by a successful load of your `.vbproj`.
+If a VB file still shows `<Missing Core Assembly>`, its project did not load; the log
+says why.
 
 **What works:**
 

@@ -98,10 +98,10 @@ impl VbDotnetExtension {
             remove_stale_versions(&package_dir);
         }
 
-        // Runs on every start, so copies downloaded before this patch existed
-        // get fixed too. A failure only costs loose-.vbproj discovery, so it
-        // must not keep the server from starting.
-        let _ = patch_vbproj_discovery(&relative_dll);
+        // Runs on every start, so copies downloaded before a patch existed get
+        // fixed too. A failure only costs loading projects without a solution,
+        // so it must not keep the server from starting.
+        let _ = patch_server_dll(&relative_dll);
 
         zed::set_language_server_installation_status(id, &LanguageServerInstallationStatus::None);
 
@@ -111,14 +111,13 @@ impl VbDotnetExtension {
     }
 }
 
-/// The search pattern Roslyn's `--autoLoadProjects` uses for loose projects,
-/// and the same-length pattern we swap in. vb-ls 0.4.0 shipped without its
-/// own patch that adds `*.vbproj` to this search, so without a solution file
-/// VB projects were never loaded. `?` matches exactly one character here (it
-/// is not followed by a `.` or the end), so `*.??proj` finds `.csproj` and
-/// `.vbproj` (and `.fsproj`, which Roslyn skips).
-const LOOSE_PROJECT_PATTERN: &str = "*.csproj";
-const LOOSE_PROJECT_PATTERN_PATCHED: &str = "*.??proj";
+/// A same-length byte replacement inside the Roslyn server DLL. Keeping the
+/// length means no offset, RVA or metadata token in the file moves.
+struct BytePatch {
+    name: &'static str,
+    original: Vec<u8>,
+    patched: Vec<u8>,
+}
 
 /// .NET stores string literals as UTF-16LE in the assembly's #US heap,
 /// prefixed by their byte length. Replacing a literal with one of the same
@@ -127,44 +126,88 @@ fn utf16le(text: &str) -> Vec<u8> {
     text.encode_utf16().flat_map(u16::to_le_bytes).collect()
 }
 
-/// Rewrites the loose-project search pattern inside the Roslyn server DLL.
-/// Returns `Ok(true)` if the file was changed, `Ok(false)` if it was already
-/// patched. Refuses to touch a file where the literal is not found exactly
-/// once, so a different build is left alone rather than corrupted.
-fn patch_vbproj_discovery_bytes(bytes: &mut [u8]) -> Result<bool> {
-    let needle = utf16le(LOOSE_PROJECT_PATTERN);
-    let replacement = utf16le(LOOSE_PROJECT_PATTERN_PATCHED);
-    debug_assert_eq!(needle.len(), replacement.len());
+/// The fixes applied to vb-ls 0.4.0's `Microsoft.CodeAnalysis.LanguageServer.dll`.
+fn server_patches() -> Vec<BytePatch> {
+    vec![
+        // The search pattern `--autoLoadProjects` uses for loose projects.
+        // vb-ls 0.4.0 shipped without its own change that adds `*.vbproj`, so
+        // without a solution VB projects were never found. `?` matches exactly
+        // one character here (it is not followed by a `.` or the end), so
+        // `*.??proj` finds `.csproj` and `.vbproj` (and `.fsproj`/`.shproj`,
+        // which Roslyn skips).
+        BytePatch {
+            name: "loose .vbproj discovery",
+            original: utf16le("*.csproj"),
+            patched: utf16le("*.??proj"),
+        },
+        // `AutoLoadProjectsInitializer.OnInitializedAsync` collects the loose
+        // projects into a pooled `ArrayBuilder` inside a `using`, and hands a
+        // lambda reading it to a fire-and-forget `Task.Run`. The `using` then
+        // frees (clears) the builder, usually before the background task has
+        // read it, so `OpenProjectsAsync` gets an empty list and loads
+        // nothing. This is the `finally` of the state machine's MoveNext:
+        //
+        //   ldloc.0; ldc.i4.0; bge.s END    ->  br.s END; nop; nop
+        //   ldarg.0; ldflda <_>5__2 (0x0400026b)
+        //   constrained. PooledDisposer<ArrayBuilder<string>>; callvirt Dispose
+        //   END: endfinally
+        //
+        // The builder is then never returned to the pool and is simply
+        // garbage collected. The field token pins this to the one call site.
+        BytePatch {
+            name: "loose project load race",
+            original: vec![
+                0x06, 0x16, 0x2f, 0x11, 0x02, 0x7c, 0x6b, 0x02, 0x00, 0x04, 0xfe, 0x16, 0x6a, 0x00,
+                0x00, 0x1b, 0x6f, 0x37, 0x00, 0x00, 0x0a, 0xdc,
+            ],
+            patched: vec![
+                0x2b, 0x13, 0x00, 0x00, 0x02, 0x7c, 0x6b, 0x02, 0x00, 0x04, 0xfe, 0x16, 0x6a, 0x00,
+                0x00, 0x1b, 0x6f, 0x37, 0x00, 0x00, 0x0a, 0xdc,
+            ],
+        },
+    ]
+}
 
-    let positions: Vec<usize> = bytes
+fn find_all(haystack: &[u8], needle: &[u8]) -> Vec<usize> {
+    haystack
         .windows(needle.len())
         .enumerate()
-        .filter(|(_, window)| *window == needle.as_slice())
+        .filter(|(_, window)| *window == needle)
         .map(|(position, _)| position)
-        .collect();
+        .collect()
+}
 
-    match positions.as_slice() {
+/// Applies one patch. Returns `Ok(true)` if the bytes were changed, `Ok(false)`
+/// if they were already patched. Refuses to touch bytes where the original is
+/// not found exactly once, so a different build is left alone, not corrupted.
+fn apply_patch(bytes: &mut [u8], patch: &BytePatch) -> Result<bool> {
+    debug_assert_eq!(patch.original.len(), patch.patched.len());
+    match find_all(bytes, &patch.original).as_slice() {
         [position] => {
-            bytes[*position..*position + replacement.len()].copy_from_slice(&replacement);
+            bytes[*position..*position + patch.patched.len()].copy_from_slice(&patch.patched);
             Ok(true)
         }
-        [] if bytes
-            .windows(replacement.len())
-            .any(|window| window == replacement.as_slice()) =>
-        {
-            Ok(false)
-        }
-        [] => Err(format!("`{LOOSE_PROJECT_PATTERN}` not found")),
-        _ => Err(format!(
-            "`{LOOSE_PROJECT_PATTERN}` found {} times",
-            positions.len()
-        )),
+        [] if find_all(bytes, &patch.patched).len() == 1 => Ok(false),
+        [] => Err(format!("{}: bytes not found", patch.name)),
+        positions => Err(format!("{}: found {} times", patch.name, positions.len())),
     }
 }
 
-fn patch_vbproj_discovery(dll: &str) -> Result<bool> {
+/// Applies every patch that fits; one that does not is skipped without
+/// blocking the others. Returns whether anything changed.
+fn patch_server_bytes(bytes: &mut [u8], patches: &[BytePatch]) -> bool {
+    let mut changed = false;
+    for patch in patches {
+        if let Ok(true) = apply_patch(bytes, patch) {
+            changed = true;
+        }
+    }
+    changed
+}
+
+fn patch_server_dll(dll: &str) -> Result<bool> {
     let mut bytes = fs::read(dll).map_err(|err| format!("reading {dll}: {err}"))?;
-    if !patch_vbproj_discovery_bytes(&mut bytes)? {
+    if !patch_server_bytes(&mut bytes, &server_patches()) {
         return Ok(false);
     }
     // Write beside the original and rename over it, so an interrupted write
@@ -210,8 +253,8 @@ fn default_server_args() -> Vec<String> {
         // notification and never loads anything. With it, Roslyn opens the
         // single .sln/.slnx at the worktree root, or the one named by
         // `.vscode/settings.json` -> `"dotnet.defaultSolution"`. Failing that
-        // it searches for loose projects (see `patch_vbproj_discovery`), which
-        // is racy inside Roslyn, so a solution is the reliable route.
+        // it searches the worktree for loose projects; `server_patches` makes
+        // that find `.vbproj` and fixes a race that made it load nothing.
         "--autoLoadProjects".into(),
         "--logLevel".into(),
         "Information".into(),
@@ -527,36 +570,57 @@ mod tests {
         );
     }
 
+    fn test_patch() -> BytePatch {
+        BytePatch {
+            name: "test",
+            original: utf16le("*.csproj"),
+            patched: utf16le("*.??proj"),
+        }
+    }
+
     #[test]
-    fn patches_project_pattern_once_and_is_idempotent() {
+    fn patches_once_and_is_idempotent() {
         let mut bytes = b"\x11prefix".to_vec();
         bytes.extend(utf16le("*.csproj"));
         bytes.extend(b"\x00suffix");
         let original_len = bytes.len();
 
-        assert_eq!(patch_vbproj_discovery_bytes(&mut bytes), Ok(true));
+        assert_eq!(apply_patch(&mut bytes, &test_patch()), Ok(true));
         assert_eq!(bytes.len(), original_len);
-        assert!(bytes
-            .windows(16)
-            .any(|window| window == utf16le("*.??proj").as_slice()));
+        assert_eq!(find_all(&bytes, &utf16le("*.??proj")).len(), 1);
         assert!(bytes.starts_with(b"\x11prefix") && bytes.ends_with(b"\x00suffix"));
 
         // Second run: already patched, nothing to do.
         let snapshot = bytes.clone();
-        assert_eq!(patch_vbproj_discovery_bytes(&mut bytes), Ok(false));
+        assert_eq!(apply_patch(&mut bytes, &test_patch()), Ok(false));
         assert_eq!(bytes, snapshot);
     }
 
     #[test]
     fn refuses_unexpected_builds() {
         let mut missing = b"no pattern here".to_vec();
-        assert!(patch_vbproj_discovery_bytes(&mut missing).is_err());
+        assert!(apply_patch(&mut missing, &test_patch()).is_err());
 
         let mut twice = utf16le("*.csproj");
         twice.extend(utf16le("*.csproj"));
         let snapshot = twice.clone();
-        assert!(patch_vbproj_discovery_bytes(&mut twice).is_err());
+        assert!(apply_patch(&mut twice, &test_patch()).is_err());
         assert_eq!(twice, snapshot, "must not modify an unexpected file");
+    }
+
+    #[test]
+    fn one_failing_patch_does_not_block_the_others() {
+        let patches = server_patches();
+        let mut bytes = patches[1].original.clone();
+        assert!(patch_server_bytes(&mut bytes, &patches));
+        assert_eq!(bytes, patches[1].patched);
+    }
+
+    #[test]
+    fn patches_keep_their_length() {
+        for patch in server_patches() {
+            assert_eq!(patch.original.len(), patch.patched.len(), "{}", patch.name);
+        }
     }
 
     /// Patches a real server DLL: `VB_LS_DLL=/path/to/dll cargo test -- --ignored`.
@@ -564,11 +628,16 @@ mod tests {
     #[ignore]
     fn patch_real_dll() {
         let dll = std::env::var("VB_LS_DLL").expect("set VB_LS_DLL");
-        println!("changed: {:?}", patch_vbproj_discovery(&dll));
+        println!("changed: {:?}", patch_server_dll(&dll));
         let bytes = fs::read(&dll).unwrap();
-        assert!(bytes
-            .windows(16)
-            .any(|window| window == utf16le("*.??proj").as_slice()));
+        for patch in server_patches() {
+            assert_eq!(find_all(&bytes, &patch.patched).len(), 1, "{}", patch.name);
+            assert!(
+                find_all(&bytes, &patch.original).is_empty(),
+                "{}",
+                patch.name
+            );
+        }
     }
 
     #[test]
